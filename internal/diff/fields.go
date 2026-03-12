@@ -8,14 +8,18 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
+// FieldChange captures a single field-level change.
 type FieldChange struct {
 	Path   string
 	Before any
 	After  any
 }
 
+// FieldDiff returns a stable, sorted list of field-level changes.
+// It uses a cmp reporter to capture only leaf field changes.
 func FieldDiff(before, after any) []FieldChange {
 	collector := &fieldCollector{changes: map[string]FieldChange{}}
+	// Reporter collects the smallest change units without dumping full structs.
 	cmp.Equal(before, after, cmpopts.EquateEmpty(), cmp.Reporter(collector))
 
 	out := make([]FieldChange, 0, len(collector.changes))

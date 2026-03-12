@@ -7,6 +7,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Nodes represents upstream nodes with weight values.
+// It supports decoding from both map and list formats.
 type Nodes map[string]int
 
 type nodeItem struct {
@@ -15,6 +17,7 @@ type nodeItem struct {
 	Weight int    `json:"weight" yaml:"weight"`
 }
 
+// UnmarshalYAML supports either map or list formats for nodes.
 func (n *Nodes) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind == yaml.MappingNode {
 		var m map[string]int
@@ -50,6 +53,7 @@ func (n *Nodes) UnmarshalYAML(value *yaml.Node) error {
 	return fmt.Errorf("unsupported nodes format")
 }
 
+// UnmarshalJSON supports either map or list formats for nodes.
 func (n *Nodes) UnmarshalJSON(data []byte) error {
 	if len(data) == 0 {
 		return nil
@@ -88,6 +92,7 @@ func (n *Nodes) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("unsupported nodes format")
 }
 
+// ToAddressList returns node addresses without weights.
 func (n Nodes) ToAddressList() []string {
 	out := make([]string, 0, len(n))
 	for key := range n {

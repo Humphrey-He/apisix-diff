@@ -1,4 +1,5 @@
-﻿package render
+﻿// Package render prints human-readable diff plans.
+package render
 
 import (
 	"encoding/json"
@@ -10,10 +11,14 @@ import (
 	"github.com/awesomeProject/apidiff/internal/diff"
 )
 
+// Options configures output behavior.
 type Options struct {
+	// Color enables ANSI color codes in output.
 	Color bool
 }
 
+// RenderPlan writes a plan-style diff to the provided writer.
+// It groups field-level changes by top-level field name.
 func RenderPlan(w io.Writer, plan diff.Plan, opts Options) {
 	adds := 0
 	changes := 0
@@ -80,6 +85,7 @@ type groupedChange struct {
 func groupFieldChanges(fields []diff.FieldChange) map[string][]groupedChange {
 	out := map[string][]groupedChange{}
 	for _, ch := range fields {
+		// Group by the first path segment for readability.
 		group, leaf := splitGroupPath(ch.Path)
 		out[group] = append(out[group], groupedChange{Path: leaf, Before: ch.Before, After: ch.After})
 	}

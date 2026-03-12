@@ -1,17 +1,24 @@
-﻿package diff
+﻿// Package diff computes semantic differences between config snapshots.
+// It produces change sets used by the plan renderer.
+package diff
 
 import (
 	"github.com/awesomeProject/apidiff/internal/model"
 )
 
+// ChangeType describes the type of change in a diff plan.
 type ChangeType string
 
 const (
-	ChangeAdd    ChangeType = "add"
+	// ChangeAdd indicates a resource exists locally but not remotely.
+	ChangeAdd ChangeType = "add"
+	// ChangeModify indicates a resource exists in both but with different fields.
 	ChangeModify ChangeType = "modify"
+	// ChangeDelete indicates a resource exists remotely but not locally.
 	ChangeDelete ChangeType = "delete"
 )
 
+// Change represents a resource-level change and its before/after state.
 type Change struct {
 	Type         ChangeType
 	ResourceType string
@@ -20,14 +27,18 @@ type Change struct {
 	After        any
 }
 
+// Plan groups all changes computed between local and remote configs.
 type Plan struct {
 	Changes []Change
 }
 
+// HasChanges reports whether any change exists.
 func (p Plan) HasChanges() bool {
 	return len(p.Changes) > 0
 }
 
+// Compute compares two config snapshots and returns a change plan.
+// It does not mutate either config.
 func Compute(local model.Config, remote model.Config) Plan {
 	plan := Plan{}
 
@@ -44,6 +55,7 @@ type keyer interface {
 	Key() string
 }
 
+// diffCollection computes changes for a single resource type by key.
 func diffCollection[T keyer](resourceType string, local map[string]T, remote map[string]T) []Change {
 	changes := []Change{}
 	for k, localItem := range local {

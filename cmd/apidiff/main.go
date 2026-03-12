@@ -1,4 +1,6 @@
-﻿package main
+﻿// Package main wires the CLI entrypoint for apidiff.
+// It translates CLI errors into conventional exit codes.
+package main
 
 import (
 	"fmt"

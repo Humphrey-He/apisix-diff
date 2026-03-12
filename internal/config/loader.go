@@ -1,4 +1,5 @@
-﻿package config
+﻿// Package config loads local declarative config files into model structures.
+package config
 
 import (
 	"encoding/json"
@@ -10,6 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// LoadFile reads a YAML or JSON file and returns a normalized config.
+// It fails on unsupported extensions and schema decoding errors.
 func LoadFile(path string) (model.Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

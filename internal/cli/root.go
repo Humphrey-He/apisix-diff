@@ -1,4 +1,6 @@
-﻿package cli
+﻿// Package cli defines the Cobra commands and exit-code behavior.
+// It is responsible for wiring flags to validation, diff, and rendering.
+package cli
 
 import (
 	"context"
@@ -7,12 +9,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// GlobalOptions holds flags shared across all subcommands.
+// Values are passed into downstream clients and validators.
 type GlobalOptions struct {
+	// AdminURL is the APISIX Admin API base URL.
 	AdminURL string
-	Token    string
-	Timeout  time.Duration
+	// Token is the Admin API token used as X-API-KEY.
+	Token string
+	// Timeout is the HTTP timeout for Admin API calls.
+	Timeout time.Duration
 }
 
+// NewRootCmd builds the root Cobra command and registers subcommands.
 func NewRootCmd() *cobra.Command {
 	opts := &GlobalOptions{}
 
@@ -34,6 +42,8 @@ func NewRootCmd() *cobra.Command {
 	return cmd
 }
 
+// Execute runs the CLI with a background context.
+// Errors are handled by main to convert them to exit codes.
 func Execute() error {
 	return NewRootCmd().ExecuteContext(context.Background())
 }

@@ -1,4 +1,6 @@
-﻿package apisix
+﻿// Package apisix fetches live configuration from the APISIX Admin API.
+// It converts API responses into internal model types for diffing.
+package apisix
 
 import (
 	"context"
@@ -10,16 +12,21 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+// Client wraps Admin API access with base URL, token, and timeout settings.
+// It is safe for reuse across requests.
 type Client struct {
 	adminURL string
 	token    string
 	timeout  time.Duration
 }
 
+// NewClient creates a new Admin API client with the provided settings.
 func NewClient(adminURL, token string, timeout time.Duration) *Client {
 	return &Client{adminURL: adminURL, token: token, timeout: timeout}
 }
 
+// FetchAll pulls all supported APISIX resources via the Admin API.
+// It performs read-only calls and returns a normalized config snapshot.
 func (c *Client) FetchAll(ctx context.Context) (model.Config, error) {
 	restyClient := resty.New().SetBaseURL(c.adminURL).SetTimeout(c.timeout)
 	if c.token != "" {
@@ -66,6 +73,8 @@ type listItem[T any] struct {
 	Value T `json:"value"`
 }
 
+// fetchList reads a list endpoint and decodes the APISIX list schema.
+// APISIX returns either list items with "value" or raw resources, so we support both.
 func fetchList[T any](ctx context.Context, client *resty.Client, path string) ([]T, error) {
 	resp, err := client.R().SetContext(ctx).Get(path)
 	if err != nil {

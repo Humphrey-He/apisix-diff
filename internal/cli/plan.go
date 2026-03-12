@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newPlanCmd builds the "plan" command to show the diff between local and live config.
+// It validates local config before calling the Admin API.
 func newPlanCmd(opts *GlobalOptions) *cobra.Command {
 	var filePath string
 	var skipReachability bool

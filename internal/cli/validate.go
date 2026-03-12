@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newValidateCmd builds the "validate" command for semantic checks only.
 func newValidateCmd(opts *GlobalOptions) *cobra.Command {
 	var filePath string
 	var skipReachability bool

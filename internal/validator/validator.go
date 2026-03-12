@@ -11,11 +11,16 @@ import (
 	"github.com/awesomeProject/apidiff/internal/model"
 )
 
+// Options configures validation behavior.
 type Options struct {
+	// SkipReachability disables TCP checks against upstream nodes.
 	SkipReachability bool
-	RulesPath        string
+	// RulesPath points to an optional YAML/JSON rule set file.
+	RulesPath string
 }
 
+// ValidateConfig validates a config snapshot against semantic rules.
+// It performs network reachability checks unless disabled.
 func ValidateConfig(ctx context.Context, cfg model.Config, opts Options) error {
 	if !opts.SkipReachability {
 		if err := validateUpstreamReachability(ctx, cfg.Upstreams); err != nil {
