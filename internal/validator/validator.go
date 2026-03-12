@@ -116,6 +116,7 @@ func validatePluginRules(scope, key string, plugins map[string]any, rules RuleSe
 			}
 		}
 	}
+
 	return nil
 }
 

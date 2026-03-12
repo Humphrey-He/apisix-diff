@@ -10,8 +10,11 @@ import (
 )
 
 type RuleSet struct {
-	Conflicts []ConflictRule `json:"conflicts" yaml:"conflicts"`
-	Requires  []RequireRule  `json:"requires" yaml:"requires"`
+	Conflicts  []ConflictRule  `json:"conflicts" yaml:"conflicts"`
+	Requires   []RequireRule   `json:"requires" yaml:"requires"`
+	RequireAny []RequireAnyRule `json:"require_one_of" yaml:"require_one_of"`
+	DenyFields []DenyFieldRule `json:"deny_fields" yaml:"deny_fields"`
+	RegexRules []RegexRule     `json:"regex" yaml:"regex"`
 }
 
 type ConflictRule struct {
@@ -25,6 +28,28 @@ type RequireRule struct {
 	Scope  []string `json:"scope" yaml:"scope"`
 	Plugin string   `json:"plugin" yaml:"plugin"`
 	Fields []string `json:"fields" yaml:"fields"`
+}
+
+type RequireAnyRule struct {
+	Name   string   `json:"name" yaml:"name"`
+	Scope  []string `json:"scope" yaml:"scope"`
+	Plugin string   `json:"plugin" yaml:"plugin"`
+	Fields []string `json:"fields" yaml:"fields"`
+}
+
+type DenyFieldRule struct {
+	Name   string   `json:"name" yaml:"name"`
+	Scope  []string `json:"scope" yaml:"scope"`
+	Plugin string   `json:"plugin" yaml:"plugin"`
+	Fields []string `json:"fields" yaml:"fields"`
+}
+
+type RegexRule struct {
+	Name    string   `json:"name" yaml:"name"`
+	Scope   []string `json:"scope" yaml:"scope"`
+	Plugin  string   `json:"plugin" yaml:"plugin"`
+	Field   string   `json:"field" yaml:"field"`
+	Pattern string   `json:"pattern" yaml:"pattern"`
 }
 
 func DefaultRules() RuleSet {
