@@ -10,7 +10,11 @@ import (
 	"github.com/awesomeProject/apidiff/internal/diff"
 )
 
-func RenderPlan(w io.Writer, plan diff.Plan) {
+type Options struct {
+	Color bool
+}
+
+func RenderPlan(w io.Writer, plan diff.Plan, opts Options) {
 	adds := 0
 	changes := 0
 	deletes := 0
@@ -39,11 +43,11 @@ func RenderPlan(w io.Writer, plan diff.Plan) {
 	for _, c := range sorted {
 		switch c.Type {
 		case diff.ChangeAdd:
-			fmt.Fprintf(w, "+ %s.%s\n", c.ResourceType, c.Key)
+			fmt.Fprintf(w, "%s %s.%s\n", colorize("+", colorGreen, opts.Color), c.ResourceType, c.Key)
 		case diff.ChangeDelete:
-			fmt.Fprintf(w, "- %s.%s\n", c.ResourceType, c.Key)
+			fmt.Fprintf(w, "%s %s.%s\n", colorize("-", colorRed, opts.Color), c.ResourceType, c.Key)
 		case diff.ChangeModify:
-			fmt.Fprintf(w, "~ %s.%s\n", c.ResourceType, c.Key)
+			fmt.Fprintf(w, "%s %s.%s\n", colorize("~", colorYellow, opts.Color), c.ResourceType, c.Key)
 			fields := diff.FieldDiff(c.Before, c.After)
 			if len(fields) == 0 {
 				fmt.Fprintln(w, "  (no field-level diff available)")
@@ -60,7 +64,7 @@ func RenderPlan(w io.Writer, plan diff.Plan) {
 			for _, group := range groupKeys {
 				fmt.Fprintf(w, "  %s:\n", group)
 				for _, ch := range groups[group] {
-					fmt.Fprintf(w, "    %s: %s -> %s\n", ch.Path, formatValue(ch.Before), formatValue(ch.After))
+					fmt.Fprintf(w, "    %s: %s %s %s\n", ch.Path, formatValue(ch.Before), colorize("->", colorDim, opts.Color), formatValue(ch.After))
 				}
 			}
 		}
@@ -122,4 +126,19 @@ func formatValue(v any) string {
 	}
 
 	return fmt.Sprintf("%v", v)
+}
+
+const (
+	colorReset  = "\x1b[0m"
+	colorRed    = "\x1b[31m"
+	colorGreen  = "\x1b[32m"
+	colorYellow = "\x1b[33m"
+	colorDim    = "\x1b[2m"
+)
+
+func colorize(text, color string, enabled bool) string {
+	if !enabled {
+		return text
+	}
+	return color + text + colorReset
 }

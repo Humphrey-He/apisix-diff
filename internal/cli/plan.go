@@ -16,6 +16,7 @@ func newPlanCmd(opts *GlobalOptions) *cobra.Command {
 	var filePath string
 	var skipReachability bool
 	var rulesPath string
+	var color bool
 
 	cmd := &cobra.Command{
 		Use:   "plan",
@@ -44,7 +45,7 @@ func newPlanCmd(opts *GlobalOptions) *cobra.Command {
 			}
 
 			changes := diff.Compute(localCfg, remoteCfg)
-			render.RenderPlan(cmd.OutOrStdout(), changes)
+			render.RenderPlan(cmd.OutOrStdout(), changes, render.Options{Color: color})
 
 			if changes.HasChanges() {
 				return &ExitError{Code: 1, Err: fmt.Errorf("diff detected")}
@@ -56,6 +57,7 @@ func newPlanCmd(opts *GlobalOptions) *cobra.Command {
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Local APISIX declarative config (YAML/JSON)")
 	cmd.Flags().BoolVar(&skipReachability, "skip-reachability", false, "Skip upstream node reachability checks")
 	cmd.Flags().StringVar(&rulesPath, "rules", "", "Rules file for plugin validation (YAML/JSON)")
+	cmd.Flags().BoolVar(&color, "color", true, "Enable colored output")
 
 	return cmd
 }
