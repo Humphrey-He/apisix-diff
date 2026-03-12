@@ -49,11 +49,58 @@ func RenderPlan(w io.Writer, plan diff.Plan) {
 				fmt.Fprintln(w, "  (no field-level diff available)")
 				continue
 			}
-			for _, ch := range fields {
-				fmt.Fprintf(w, "  %s: %s -> %s\n", ch.Path, formatValue(ch.Before), formatValue(ch.After))
+
+			groups := groupFieldChanges(fields)
+			groupKeys := make([]string, 0, len(groups))
+			for k := range groups {
+				groupKeys = append(groupKeys, k)
+			}
+			sort.Strings(groupKeys)
+
+			for _, group := range groupKeys {
+				fmt.Fprintf(w, "  %s:\n", group)
+				for _, ch := range groups[group] {
+					fmt.Fprintf(w, "    %s: %s -> %s\n", ch.Path, formatValue(ch.Before), formatValue(ch.After))
+				}
 			}
 		}
 	}
+}
+
+type groupedChange struct {
+	Path   string
+	Before any
+	After  any
+}
+
+func groupFieldChanges(fields []diff.FieldChange) map[string][]groupedChange {
+	out := map[string][]groupedChange{}
+	for _, ch := range fields {
+		group, leaf := splitGroupPath(ch.Path)
+		out[group] = append(out[group], groupedChange{Path: leaf, Before: ch.Before, After: ch.After})
+	}
+	for group := range out {
+		sort.Slice(out[group], func(i, j int) bool {
+			return out[group][i].Path < out[group][j].Path
+		})
+	}
+	return out
+}
+
+func splitGroupPath(path string) (string, string) {
+	trimmed := strings.TrimPrefix(path, ".")
+	if trimmed == "" {
+		return "root", path
+	}
+
+	parts := strings.Split(trimmed, ".")
+	if len(parts) == 1 {
+		return parts[0], parts[0]
+	}
+
+	group := parts[0]
+	leaf := strings.Join(parts[1:], ".")
+	return group, leaf
 }
 
 func formatValue(v any) string {
