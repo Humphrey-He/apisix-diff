@@ -117,6 +117,40 @@ func validatePluginRules(scope, key string, plugins map[string]any, rules RuleSe
 		}
 	}
 
+	for _, rule := range rules.RequireAny {
+		if !scopeMatches(rule.Scope, scope) {
+			continue
+		}
+		if _, ok := plugins[rule.Plugin]; !ok {
+			continue
+		}
+		if !pluginHasAnyField(plugins, rule.Plugin, rule.Fields) {
+			name := rule.Name
+			if name == "" {
+				name = fmt.Sprintf("%s requires one of %s", rule.Plugin, strings.Join(rule.Fields, ", "))
+			}
+			return fmt.Errorf("%s %s violates require_one_of rule: %s", scope, key, name)
+		}
+	}
+
+	for _, rule := range rules.DenyFields {
+		if !scopeMatches(rule.Scope, scope) {
+			continue
+		}
+		if _, ok := plugins[rule.Plugin]; !ok {
+			continue
+		}
+		for _, field := range rule.Fields {
+			if pluginFieldExists(plugins, rule.Plugin, field) {
+				name := rule.Name
+				if name == "" {
+					name = fmt.Sprintf("%s forbids %s", rule.Plugin, field)
+				}
+				return fmt.Errorf("%s %s violates deny_fields rule: %s", scope, key, name)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -142,6 +176,15 @@ func hasAllPlugins(plugins map[string]any, names []string) bool {
 		}
 	}
 	return true
+}
+
+func pluginHasAnyField(plugins map[string]any, pluginName string, fields []string) bool {
+	for _, field := range fields {
+		if pluginFieldExists(plugins, pluginName, field) {
+			return true
+		}
+	}
+	return false
 }
 
 func pluginFieldExists(plugins map[string]any, pluginName, field string) bool {
