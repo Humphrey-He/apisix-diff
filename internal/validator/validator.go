@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 
@@ -151,7 +152,46 @@ func validatePluginRules(scope, key string, plugins map[string]any, rules RuleSe
 		}
 	}
 
+	for _, rule := range rules.RegexRules {
+		if !scopeMatches(rule.Scope, scope) {
+			continue
+		}
+		if rule.Plugin != "" {
+			if _, ok := plugins[rule.Plugin]; !ok {
+				continue
+			}
+		}
+		if rule.Field == "" || rule.Pattern == "" {
+			continue
+		}
+		value, ok := pluginFieldValue(plugins, rule.Plugin, rule.Field)
+		if !ok {
+			continue
+		}
+		str, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("%s %s violates regex rule: %s (field not string)", scope, key, ruleName(rule, "regex"))
+		}
+		re, err := regexp.Compile(rule.Pattern)
+		if err != nil {
+			return fmt.Errorf("invalid regex pattern for rule %s: %w", ruleName(rule, "regex"), err)
+		}
+		if !re.MatchString(str) {
+			return fmt.Errorf("%s %s violates regex rule: %s", scope, key, ruleName(rule, "regex"))
+		}
+	}
+
 	return nil
+}
+
+func ruleName(rule RegexRule, fallback string) string {
+	if rule.Name != "" {
+		return rule.Name
+	}
+	if rule.Plugin != "" {
+		return fmt.Sprintf("%s.%s matches %s", rule.Plugin, rule.Field, rule.Pattern)
+	}
+	return fallback
 }
 
 func scopeMatches(scopes []string, scope string) bool {
@@ -185,6 +225,49 @@ func pluginHasAnyField(plugins map[string]any, pluginName string, fields []strin
 		}
 	}
 	return false
+}
+
+func pluginFieldValue(plugins map[string]any, pluginName, field string) (any, bool) {
+	if pluginName != "" {
+		raw, ok := plugins[pluginName]
+		if !ok {
+			return nil, false
+		}
+		current, ok := raw.(map[string]any)
+		if !ok {
+			return nil, false
+		}
+		return nestedFieldValue(current, field)
+	}
+	if field == "" {
+		return nil, false
+	}
+
+	parts := strings.Split(field, ".")
+	if len(parts) < 2 {
+		return nil, false
+	}
+	plugin := parts[0]
+	return pluginFieldValue(plugins, plugin, strings.Join(parts[1:], "."))
+}
+
+func nestedFieldValue(current map[string]any, field string) (any, bool) {
+	parts := strings.Split(field, ".")
+	for i, p := range parts {
+		val, ok := current[p]
+		if !ok {
+			return nil, false
+		}
+		if i == len(parts)-1 {
+			return val, true
+		}
+		child, ok := val.(map[string]any)
+		if !ok {
+			return nil, false
+		}
+		current = child
+	}
+	return nil, false
 }
 
 func pluginFieldExists(plugins map[string]any, pluginName, field string) bool {
