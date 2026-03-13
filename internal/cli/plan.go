@@ -3,6 +3,9 @@
 import (
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"strings"
 
 	"github.com/awesomeProject/apidiff/internal/apisix"
 	"github.com/awesomeProject/apidiff/internal/config"
@@ -18,7 +21,8 @@ func newPlanCmd(opts *GlobalOptions) *cobra.Command {
 	var filePath string
 	var skipReachability bool
 	var rulesPath string
-	var color bool
+	var colorMode string
+	var output string
 
 	cmd := &cobra.Command{
 		Use:   "plan",
@@ -47,7 +51,20 @@ func newPlanCmd(opts *GlobalOptions) *cobra.Command {
 			}
 
 			changes := diff.Compute(localCfg, remoteCfg)
-			render.RenderPlan(cmd.OutOrStdout(), changes, render.Options{Color: color})
+
+			out := cmd.OutOrStdout()
+			switch strings.ToLower(output) {
+			case "json":
+				if err := render.RenderPlanJSON(out, changes); err != nil {
+					return err
+				}
+			default:
+				useColor, err := resolveColorMode(colorMode, out)
+				if err != nil {
+					return err
+				}
+				render.RenderPlan(out, changes, render.Options{Color: useColor})
+			}
 
 			if changes.HasChanges() {
 				return &ExitError{Code: 1, Err: fmt.Errorf("diff detected")}
@@ -59,7 +76,33 @@ func newPlanCmd(opts *GlobalOptions) *cobra.Command {
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Local APISIX declarative config (YAML/JSON)")
 	cmd.Flags().BoolVar(&skipReachability, "skip-reachability", false, "Skip upstream node reachability checks")
 	cmd.Flags().StringVar(&rulesPath, "rules", "", "Rules file for plugin validation (YAML/JSON)")
-	cmd.Flags().BoolVar(&color, "color", true, "Enable colored output")
+	cmd.Flags().StringVar(&colorMode, "color", "auto", "Color output: auto, always, never")
+	cmd.Flags().StringVarP(&output, "output", "o", "text", "Output format: text or json")
 
 	return cmd
+}
+
+func resolveColorMode(mode string, out io.Writer) (bool, error) {
+	switch strings.ToLower(mode) {
+	case "auto":
+		return isTerminal(out), nil
+	case "always", "true", "1", "yes":
+		return true, nil
+	case "never", "false", "0", "no":
+		return false, nil
+	default:
+		return false, fmt.Errorf("invalid --color value: %s", mode)
+	}
+}
+
+func isTerminal(w io.Writer) bool {
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+	info, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&os.ModeCharDevice != 0
 }

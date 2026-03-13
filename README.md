@@ -28,7 +28,8 @@ apidiff plan -f ./apisix.yaml --admin-url http://127.0.0.1:9180 --token <X-API-K
 Optional flags:
 - `--skip-reachability` Skip upstream node reachability checks
 - `--rules <file>` Use a custom plugin rules file (YAML/JSON)
-- `--color` Enable/disable colored output (default: true)
+- `--color <auto|always|never>` Color output mode (default: auto)
+- `-o, --output <text|json>` Output format (default: text)
 
 ### Validate
 
@@ -64,6 +65,12 @@ Plan: 2 to add, 1 to change, 1 to delete.
   Timeout:
     Connect: "1s" -> "2s"
 - plugin_config.p1
+```
+
+## JSON Output Example
+
+```
+apidiff plan -f ./apisix.yaml --output json
 ```
 
 ## Plugin Rules Configuration

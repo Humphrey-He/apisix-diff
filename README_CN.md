@@ -9,7 +9,7 @@ APISIX 声明式配置差异对比与语义校验工具。对比本地 YAML/JSON
 - Plan 风格 diff 输出（字段级变更）
 - 语义校验
   - Upstream 节点可达性检查
-  - 插件规则（冲突/必填字段），支持自定义规则集
+  - 插件规则（冲突、必填、至少一个字段、禁止字段、正则）支持自定义规则集
 
 ## 安装
 
@@ -28,6 +28,8 @@ apidiff plan -f ./apisix.yaml --admin-url http://127.0.0.1:9180 --token <X-API-K
 可选参数：
 - `--skip-reachability` 跳过 upstream 可达性检查
 - `--rules <file>` 使用自定义插件规则文件（YAML/JSON）
+- `--color <auto|always|never>` 颜色输出模式（默认：auto）
+- `-o, --output <text|json>` 输出格式（默认：text）
 
 ### Validate
 
@@ -58,9 +60,17 @@ Plan: 2 to add, 1 to change, 1 to delete.
 
 + route.demo_foo
 ~ upstream.u_1
-  .Nodes["10.0.0.1:8080"]: 1 -> 2
-  .Timeout.Connect: "1s" -> "2s"
+  Nodes:
+    ["10.0.0.1:8080"]: 1 -> 2
+  Timeout:
+    Connect: "1s" -> "2s"
 - plugin_config.p1
+```
+
+## JSON 输出示例
+
+```
+apidiff plan -f ./apisix.yaml --output json
 ```
 
 ## 插件规则配置
@@ -71,6 +81,9 @@ Plan: 2 to add, 1 to change, 1 to delete.
 
 - `conflicts`：互斥规则，插件不能同时出现
 - `requires`：必填规则，插件启用时必须包含字段
+- `require_one_of`：至少一个字段必须存在
+- `deny_fields`：禁止字段，出现即报错
+- `regex`：字段正则约束
 
 ### 示例 (rules.yaml)
 
@@ -85,6 +98,25 @@ requires:
     scope: [consumer]
     plugin: key-auth
     fields: [key]
+
+require_one_of:
+  - name: jwt-auth requires one of key/secret
+    scope: [consumer]
+    plugin: jwt-auth
+    fields: [key, secret]
+
+deny_fields:
+  - name: limit-req forbids allow_degradation
+    scope: [route, service]
+    plugin: limit-req
+    fields: [allow_degradation]
+
+regex:
+  - name: key-auth key format
+    scope: [consumer]
+    plugin: key-auth
+    field: key
+    pattern: "^[A-Za-z0-9_-]{8,64}$"
 ```
 
 ### 支持的 scope
